@@ -15,7 +15,12 @@ import org.mortbay.servlet.GzipFilter;
 public class JavaAgent {
    static Server server;
 
-   public static void premain(String agentArgument, Instrumentation instrumentation) throws Exception {
+    public static void agentmain(String agentArgument, Instrumentation instrumentation) throws Exception {
+      premain(agentArgument, instrumentation);
+    }
+
+
+    public static void premain(String agentArgument, Instrumentation instrumentation) throws Exception {
      String[] args = agentArgument.split(":");
      if (args.length < 2 || args.length > 3) {
        System.err.println("Usage: -javaagent:/path/to/JavaAgent.jar=[host:]<port>:<yaml configuration file>");
