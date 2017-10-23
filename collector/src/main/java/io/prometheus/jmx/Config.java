@@ -31,6 +31,7 @@ public class Config {
   String host = "0.0.0.0";
   String consulHost;
   int consulPort = 8500;
+  String consulMode = "agent";
   int port = 0;
   Integer startDelaySeconds = 0;
   String jmxUrl = "";

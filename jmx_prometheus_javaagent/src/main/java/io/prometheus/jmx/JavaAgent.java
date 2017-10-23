@@ -2,6 +2,7 @@ package io.prometheus.jmx;
 
 import java.io.File;
 import java.lang.instrument.Instrumentation;
+import java.lang.reflect.Field;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,13 +10,17 @@ import java.util.UUID;
 
 import com.google.common.net.HostAndPort;
 import com.orbitz.consul.Consul;
-import com.sun.tools.doclets.formats.html.SourceToHTMLConverter;
+import com.orbitz.consul.model.catalog.CatalogRegistration;
+import com.orbitz.consul.model.catalog.ImmutableCatalogRegistration;
+import com.orbitz.consul.model.health.ImmutableService;
+import com.orbitz.consul.model.health.Service;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
 
 public class JavaAgent {
 
+  private static final String consulTag = "jmxexporter";
   static HTTPServer server;
 
   public static void agentmain(String agentArgument, Instrumentation instrumentation) throws Exception {
@@ -43,7 +48,13 @@ public class JavaAgent {
     for (String argument : arguments.keySet()) {
       try {
         //TODO cast to boolean or int
-        Config.class.getDeclaredField(argument).set(config, arguments.get(argument));
+        Field field = Config.class.getDeclaredField(argument);
+        if (field.getType().equals(String.class)) {
+          field.set(config, arguments.get(argument));
+        } else if (field.getType().equals(int.class) || field.getType().equals(Integer.class)) {
+          field.set(config, Integer.parseInt(arguments.get(argument)));
+        }
+
       } catch (NoSuchFieldException ex) {
         System.out.println("Invalid configuration key: " + argument);
       }
@@ -62,28 +73,53 @@ public class JavaAgent {
     DefaultExports.initialize();
     server = new HTTPServer(socketAddress, CollectorRegistry.defaultRegistry);
 
-    try {
-      if (config.consulHost != null) {
-        final Consul consul = Consul.builder().withHostAndPort(HostAndPort.fromParts(config.consulHost, config.consulPort)).build();
-        final String serviceId = "jmxexporter-" + UUID.randomUUID();
-        URL url = new URL("http://" + socketAddress.getHostName() + ":" + socketAddress.getPort());
-        consul.agentClient().register(config.port, url, 10, "jmxexporter", serviceId);
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-          public void run() {
-            if (serviceId != null) {
-              consul.agentClient().deregister(serviceId);
-            }
-          }
-        });
-      }
-    } catch (
-        Exception ex)
 
-    {
+    if (config.consulHost != null) {
+      registerToConsul(config, socketAddress);
+    }
+
+
+  }
+
+
+  private static void registerToConsul(Config config, InetSocketAddress socketAddress) {
+    try {
+      final Consul consul = Consul.builder().withHostAndPort(HostAndPort.fromParts(config.consulHost, config.consulPort)).build();
+      final String serviceId = consulTag + "-" + UUID.randomUUID();
+      System.out.println("Registering consul service " + serviceId);
+      if (!config.consulMode.equals("agent")) {
+        Service service = ImmutableService.builder()
+            .id(serviceId)
+            .service(consulTag)
+            .port(socketAddress.getPort())
+            .address(InetAddress.getLocalHost().getHostName())
+            .build();
+
+        CatalogRegistration registration = ImmutableCatalogRegistration.builder()
+            .datacenter("dc1")
+            .node("node1")
+            .service(service)
+            .address(service.getAddress())
+            .build();
+        consul.catalogClient().register(registration);
+      } else {
+        URL url = new URL("http://" + socketAddress.getHostName() + ":" + socketAddress.getPort());
+        consul.agentClient().register(config.port, url, 10, consulTag, serviceId);
+      }
+
+      Runtime.getRuntime().addShutdownHook(new Thread() {
+
+        public void run() {
+          System.out.println("Deregistering consul service: " + serviceId);
+          if (serviceId != null) {
+            consul.agentClient().deregister(serviceId);
+          }
+        }
+      });
+    } catch (Exception ex) {
       System.out.println("Consul is not available.");
       ex.printStackTrace();
     }
-
   }
 
   private static InetSocketAddress getInetSocketAddress(String hostname, int port) {

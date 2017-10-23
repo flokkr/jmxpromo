@@ -139,7 +139,12 @@ public class JmxCollector extends Collector implements Collector.Describable {
       String help = attrDescription + " (" + beanName + attrName + ")";
       String attrNameSnakeCase = snakeCasePattern.matcher(attrName).replaceAll("$1_$2").toLowerCase();
 
-      for (Rule rule : config.rules) {
+      List<Rule> rules = config.rules;
+      if (config.rules.size() == 0) {
+        rules = new ArrayList<Rule>();
+        rules.add(new Rule());
+      }
+      for (Rule rule : rules) {
         Matcher matcher = null;
         String matchName = beanName + (rule.attrNameSnakeCase ? attrNameSnakeCase : attrName);
         if (rule.pattern != null) {

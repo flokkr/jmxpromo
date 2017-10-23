@@ -91,9 +91,12 @@
                 <include>javax.servlet.**</include>
                 <include>org.eclipse.**</include>
                 <include>org.yaml.**</include>
+                <include>com.**</include>
               </includes>
               <excludes>
                 <exclude>io.prometheus.jmx.shaded.**</exclude>
+                <exclude>com.sun.**</exclude>
+                <exclude>java.**</exclude>
               </excludes>
             </relocation>
           </relocations>

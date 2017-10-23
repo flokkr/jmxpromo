@@ -54,7 +54,7 @@ public class JavaAgentIT {
         final String finalName = (String) System.getProperties().get("finalName");
         final int port = Integer.parseInt((String) System.getProperties().get("it.port"));
         final String config = getClass().getClassLoader().getResource("test.yml").getFile();
-        final String javaagent = "-javaagent:" + buildDirectory + "/" + finalName + ".jar=" + port + ":" + config;
+        final String javaagent = "-javaagent:" + buildDirectory + "/" + finalName + ".jar=port=" + port + ":configfile=" + config;
 
         final String javaHome = System.getenv("JAVA_HOME");
         final String java;

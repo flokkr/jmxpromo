@@ -112,6 +112,9 @@ public class JmxScraper {
             for (ObjectName name : whitelistObjectNames) {
                 mBeanNames.addAll(beanConn.queryMBeans(name, null));
             }
+            if (whitelistObjectNames.size() == 0) {
+                mBeanNames.addAll(beanConn.queryMBeans(null, null));
+            }
             for (ObjectName name : blacklistObjectNames) {
                 mBeanNames.removeAll(beanConn.queryMBeans(name, null));
             }
