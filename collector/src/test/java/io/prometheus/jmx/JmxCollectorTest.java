@@ -38,17 +38,17 @@ public class JmxCollectorTest {
       registry = new CollectorRegistry();
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=RuntimeException.class)
     public void testRulesMustHaveNameWithHelp() throws Exception {
       JmxCollector jc = new JmxCollector("---\nrules:\n- help: foo");
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=RuntimeException.class)
     public void testRulesMustHaveNameWithLabels() throws Exception {
 	  JmxCollector jc = new JmxCollector("---\nrules:\n- labels: {}");
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected=RuntimeException.class)
     public void testRulesMustHavePatternWithName() throws Exception {
 	  JmxCollector jc = new JmxCollector("---\nrules:\n- name: foo");
     }

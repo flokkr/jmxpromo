@@ -1,11 +1,17 @@
-JMX Exporter
+jmxpromo
 =====
-
-JMX to Prometheus exporter.
 
 A Collector that can configurably scrape and expose mBeans of a JMX target. It
 meant to be run as a Java Agent, exposing an HTTP server and scraping the local
-JVM.
+JVM
+
+*This is a fork of the [original Prometheus JMX exporter](https://github.com/prometheus/jmx_exporter).*
+
+Notable changes:
+   * Config file is optional
+   * More flexible agent configuration (any key value could be defined as agent parameter)
+   * Agent could be attached to a running JVM instance
+   * Consul support (http port is registered to a consul)
 
 This can be also run as an independent HTTP server and scrape remote JMX targets.
 
@@ -14,7 +20,7 @@ This can be also run as an independent HTTP server and scrape remote JMX targets
 To run as a javaagent [download the jar](https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/0.10/jmx_prometheus_javaagent-0.10.jar) and run:
 
 ```
-java -javaagent:./jmx_prometheus_javaagent-0.10.jar=1234:config.yaml -jar yourJar.jar
+java -javaagent:./jmx_prometheus_javaagent-0.10.jar=port=1234:configfile=config.yaml -jar yourJar.jar
 ```
 
 To bind the java agent to a specific IP change the port number to `host:port`.
@@ -33,6 +39,8 @@ startDelaySeconds: 0
 hostPort: 127.0.0.1:1234
 jmxUrl: service:jmx:rmi:///jndi/rmi://127.0.0.1:1234/jmxrmi
 ssl: false
+consulHost:
+consulPort: 8500
 lowercaseOutputName: false
 lowercaseOutputLabelNames: false
 whitelistObjectNames: ["org.apache.cassandra.metrics:*"]
@@ -68,6 +76,8 @@ valueFactor | Optional number that `value` (or the scraped mBean value if `value
 labels   | A map of label name to label value pairs. Capture groups from `pattern` can be used in each. `name` must be set to use this. Empty names and values are ignored. If not specified and the default format is not being used, no labels are set.
 help     | Help text for the metric. Capture groups from `pattern` can be used. `name` must be set to use this. Defaults to the mBean attribute decription and the full name of the attribute.
 type     | The type of the metric, can be `GAUGE`, `COUNTER` or `UNTYPED`. `name` must be set to use this. Defaults to `UNTYPED`.
+consulHost | if defined the running http server will be registered to a consul instance
+consulPort | port, used by the consul Server
 
 Metric names and label names are sanitized. All characters other than `[a-zA-Z0-9:_]` are replaced with underscores,
 and adjacent underscores are collapsed. There's no limitations on label values or the help text.
@@ -107,7 +117,7 @@ If a given part isn't set, it'll be excluded.
 
 ## Debugging
 
-You can start the jmx's scraper in standlone mode in order to debug what is called 
+You can start the jmx's scraper in standlone mode in order to debug what is called
 
 `java -cp jmx_exporter.jar io.prometheus.jmx.JmxScraper  service:jmx:rmi:your_url`
 
